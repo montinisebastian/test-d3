@@ -6,161 +6,185 @@
     <title>Employee Journey Map Interactivo</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; }
-        svg { max-width: 100%; height: auto; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
+        #chart { background-color: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .touchpoint { cursor: pointer; }
         .filter-option { cursor: pointer; }
         .filter-option:hover { font-weight: bold; }
+        .tooltip { position: absolute; background-color: white; border: 1px solid #ddd; padding: 10px; border-radius: 5px; pointer-events: none; }
     </style>
 </head>
 <body>
     <div id="chart"></div>
     <script>
-        // Crear el SVG
-        const svg = d3.select("#chart")
-            .append("svg")
-            .attr("viewBox", "0 0 800 600");
+        // Configuración
+        const width = 800;
+        const height = 500;
+        const margin = { top: 50, right: 50, bottom: 100, left: 50 };
 
-        // Añadir elementos al SVG
-        svg.html(`
-            <defs>
-                <filter id="shadow">
-                    <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                </filter>
-            </defs>
-            
-            <!-- Título -->
-            <text x="400" y="30" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" font-weight="bold">Employee Journey Map</text>
-            
-            <!-- Línea de tiempo -->
-            <line x1="50" y1="100" x2="750" y2="100" stroke="#ccc" stroke-width="4"/>
-            
-            <!-- Puntos de contacto -->
-            <g id="touchpoints"></g>
-            
-            <!-- Etiquetas de puntos de contacto -->
-            <g id="touchpoint-labels" font-family="Arial, sans-serif" font-size="12" text-anchor="middle"></g>
-            
-            <!-- Gráfico de satisfacción -->
-            <path id="satisfaction-line" fill="none" stroke="#34a853" stroke-width="3"/>
-            
-            <!-- Pains y Gains -->
-            <g id="pains-gains" font-family="Arial, sans-serif" font-size="14"></g>
-            
-            <!-- Filtros -->
-            <g id="filters" transform="translate(50, 400)">
-                <rect width="700" height="30" fill="#f1f3f4" rx="5" ry="5"/>
-                <text x="10" y="20" font-family="Arial, sans-serif" font-size="14">Filtros:</text>
-            </g>
-            
-            <!-- Leyenda -->
-            <g transform="translate(50, 450)">
-                <circle cx="10" cy="10" r="5" fill="#4285f4"/>
-                <text x="20" y="15" font-family="Arial, sans-serif" font-size="12">Touchpoint</text>
-                <line x1="100" y1="10" x2="130" y2="10" stroke="#34a853" stroke-width="2"/>
-                <text x="140" y="15" font-family="Arial, sans-serif" font-size="12">Satisfacción</text>
-                <rect x="240" y="5" width="10" height="10" fill="#ea4335"/>
-                <text x="255" y="15" font-family="Arial, sans-serif" font-size="12">Pain</text>
-                <rect x="300" y="5" width="10" height="10" fill="#34a853"/>
-                <text x="315" y="15" font-family="Arial, sans-serif" font-size="12">Gain</text>
-            </g>
-        `);
-
-        // Datos simulados
-        const touchpoints = [
-            {name: "Reclutamiento", x: 100},
-            {name: "Onboarding", x: 250},
-            {name: "Desarrollo", x: 400},
-            {name: "Retención", x: 550},
-            {name: "Salida", x: 700}
-        ];
-
-        const satisfactionData = {
-            "Todos": [250, 200, 300, 180, 220],
-            "IT": [220, 240, 260, 200, 180],
-            "RRHH": [280, 180, 320, 160, 240]
+        // Datos
+        const touchpoints = ["Reclutamiento", "Onboarding", "Desarrollo", "Retención", "Salida"];
+        const data = {
+            "Todos": [
+                { satisfaction: 75, pain: "Proceso largo", gain: "Claridad en la descripción del puesto" },
+                { satisfaction: 85, pain: "Sobrecarga de información", gain: "Bienvenida personalizada" },
+                { satisfaction: 70, pain: "Falta de feedback", gain: "Oportunidades de crecimiento" },
+                { satisfaction: 65, pain: "Falta de reconocimiento", gain: "Programas de bienestar" },
+                { satisfaction: 60, pain: "Proceso burocrático", gain: "Feedback constructivo" }
+            ],
+            "IT": [
+                { satisfaction: 80, pain: "Pruebas técnicas extensas", gain: "Entrevistas con el equipo" },
+                { satisfaction: 90, pain: "Configuración de herramientas", gain: "Mentor asignado" },
+                { satisfaction: 75, pain: "Proyectos repetitivos", gain: "Acceso a nuevas tecnologías" },
+                { satisfaction: 70, pain: "Horas extras frecuentes", gain: "Flexibilidad horaria" },
+                { satisfaction: 65, pain: "Pérdida de accesos anticipada", gain: "Recomendaciones para futuros empleos" }
+            ],
+            "RRHH": [
+                { satisfaction: 85, pain: "Alto volumen de candidatos", gain: "Herramientas de selección eficientes" },
+                { satisfaction: 80, pain: "Documentación excesiva", gain: "Proceso digitalizado" },
+                { satisfaction: 75, pain: "Limitadas oportunidades de especialización", gain: "Rotación por áreas" },
+                { satisfaction: 70, pain: "Carga emocional", gain: "Programas de mindfulness" },
+                { satisfaction: 75, pain: "Gestión de conflictos en salidas", gain: "Procesos de transición suaves" }
+            ]
         };
 
-        // Función para actualizar el gráfico
-        function updateChart(area) {
-            // Actualizar línea de satisfacción
-            const lineGenerator = d3.line()
-                .x((d, i) => touchpoints[i].x)
-                .y(d => d);
+        // Crear SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("width", "100%")
+            .attr("height", "auto");
 
-            svg.select("#satisfaction-line")
-                .datum(satisfactionData[area])
-                .transition()
-                .duration(1000)
-                .attr("d", lineGenerator);
+        // Escalas
+        const xScale = d3.scalePoint()
+            .domain(touchpoints)
+            .range([margin.left, width - margin.right]);
 
-            // Actualizar pains y gains
-            const painsGains = svg.select("#pains-gains").selectAll("g")
-                .data(satisfactionData[area]);
+        const yScale = d3.scaleLinear()
+            .domain([0, 100])
+            .range([height - margin.bottom, margin.top]);
 
-            painsGains.enter()
-                .append("g")
-                .merge(painsGains)
-                .attr("transform", (d, i) => `translate(${touchpoints[i].x}, ${d})`)
-                .html((d, i) => `
-                    <rect x="-20" y="${d > 250 ? -20 : 0}" width="40" height="20" 
-                          fill="${d > 250 ? '#34a853' : '#ea4335'}" filter="url(#shadow)"/>
-                    <text x="0" y="${d > 250 ? -5 : 15}" text-anchor="middle" fill="white">
-                        ${d > 250 ? 'Gain' : 'Pain'}
-                    </text>
-                `);
+        // Línea de satisfacción
+        const line = d3.line()
+            .x((d, i) => xScale(touchpoints[i]))
+            .y(d => yScale(d.satisfaction));
 
-            painsGains.exit().remove();
-        }
+        // Crear elementos gráficos
+        const satisfactionLine = svg.append("path")
+            .attr("fill", "none")
+            .attr("stroke", "#34a853")
+            .attr("stroke-width", 3);
 
-        // Inicializar touchpoints
-        svg.select("#touchpoints")
-            .selectAll("circle")
+        const touchpointCircles = svg.selectAll(".touchpoint")
             .data(touchpoints)
             .enter()
             .append("circle")
-            .attr("cx", d => d.x)
-            .attr("cy", 100)
-            .attr("r", 10)
+            .attr("class", "touchpoint")
+            .attr("cx", d => xScale(d))
+            .attr("cy", height - margin.bottom)
+            .attr("r", 8)
             .attr("fill", "#4285f4");
 
-        // Inicializar etiquetas de touchpoints
-        svg.select("#touchpoint-labels")
-            .selectAll("text")
+        const touchpointLabels = svg.selectAll(".touchpoint-label")
             .data(touchpoints)
             .enter()
             .append("text")
-            .attr("x", d => d.x)
-            .attr("y", 130)
-            .text(d => d.name);
+            .attr("class", "touchpoint-label")
+            .attr("x", d => xScale(d))
+            .attr("y", height - margin.bottom + 20)
+            .attr("text-anchor", "middle")
+            .text(d => d);
 
-        // Añadir filtros interactivos
+        // Ejes
+        const xAxis = d3.axisBottom(xScale);
+        const yAxis = d3.axisLeft(yScale);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(xAxis);
+
+        svg.append("g")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(yAxis);
+
+        // Título
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", 30)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("font-weight", "bold")
+            .text("Employee Journey Map");
+
+        // Filtros
         const filterOptions = ["Todos", "IT", "RRHH"];
-        svg.select("#filters")
-            .selectAll(".filter-option")
+        const filters = svg.append("g")
+            .attr("transform", `translate(${margin.left}, ${height - 40})`);
+
+        filters.selectAll(".filter-option")
             .data(filterOptions)
             .enter()
             .append("text")
             .attr("class", "filter-option")
-            .attr("x", (d, i) => 70 + i * 60)
-            .attr("y", 20)
+            .attr("x", (d, i) => i * 60)
+            .attr("y", 0)
             .text(d => d)
             .on("click", function(event, d) {
-                d3.selectAll(".filter-option").attr("font-weight", "normal");
-                d3.select(this).attr("font-weight", "bold");
                 updateChart(d);
+                d3.selectAll(".filter-option").style("font-weight", "normal");
+                d3.select(this).style("font-weight", "bold");
             });
+
+        // Tooltip
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Función para actualizar el gráfico
+        function updateChart(area) {
+            const areaData = data[area];
+
+            satisfactionLine
+                .datum(areaData)
+                .attr("d", line);
+
+            svg.selectAll(".pain-gain")
+                .data(areaData)
+                .join("g")
+                .attr("class", "pain-gain")
+                .attr("transform", (d, i) => `translate(${xScale(touchpoints[i])},${yScale(d.satisfaction)})`)
+                .call(g => g.selectAll("rect").data(d => [
+                    { type: "pain", value: d.pain },
+                    { type: "gain", value: d.gain }
+                ]).join("rect")
+                    .attr("x", (d, i) => i * 10 - 15)
+                    .attr("y", -10)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", d => d.type === "pain" ? "#ea4335" : "#34a853"));
+
+            touchpointCircles
+                .on("mouseover", function(event, d) {
+                    const i = touchpoints.indexOf(d);
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(`<strong>${d}</strong><br/>
+                                  Satisfacción: ${areaData[i].satisfaction}%<br/>
+                                  Pain: ${areaData[i].pain}<br/>
+                                  Gain: ${areaData[i].gain}`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+        }
 
         // Inicializar el gráfico
         updateChart("Todos");
-
-        // Interactividad de los touchpoints
-        svg.selectAll("#touchpoints circle")
-            .on("mouseover", function() {
-                d3.select(this).transition().duration(300).attr("r", 15);
-            })
-            .on("mouseout", function() {
-                d3.select(this).transition().duration(300).attr("r", 10);
-            });
     </script>
 </body>
 </html>
