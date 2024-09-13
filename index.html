@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Journey Map Interactivo</title>
+    <title>Employee Journey Map Interactivo con Zoom</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
-        svg { max-width: 100%; height: auto; }
+        #chart { width: 100%; height: 500px; } /* Ajusta la altura según tus necesidades */
+        svg { max-width: 100%; height: 100%; }
         .axis-label { font-size: 12px; }
         .touchpoint-label { font-size: 10px; }
         .legend-item { font-size: 12px; }
@@ -17,14 +18,16 @@
 </head>
 <body>
     <div id="chart"></div>
+    <div id="filters"></div>
     <script>
-        const svg = d3.select("#chart")
-            .append("svg")
-            .attr("viewBox", "0 0 800 600");
-
         const margin = {top: 50, right: 50, bottom: 100, left: 50};
         const width = 800 - margin.left - margin.right;
         const height = 600 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .call(d3.zoom().on("zoom", zoomed));
 
         const g = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -47,7 +50,7 @@
             .domain([0, 100]);
 
         // Eje X
-        g.append("g")
+        const xAxis = g.append("g")
             .attr("transform", `translate(0,${height})`)
             .call(d3.axisBottom(x))
             .selectAll("text")
@@ -55,7 +58,7 @@
             .style("text-anchor", "end");
 
         // Eje Y
-        g.append("g")
+        const yAxis = g.append("g")
             .call(d3.axisLeft(y));
 
         // Etiqueta del eje Y
@@ -129,20 +132,17 @@
 
         // Filtros
         const filterOptions = ["Todos", "IT", "RRHH"];
-        svg.append("g")
-            .attr("transform", `translate(${margin.left}, ${height + margin.top + 80})`)
+        d3.select("#filters")
             .selectAll(".filter-option")
             .data(filterOptions)
             .enter()
-            .append("text")
+            .append("button")
             .attr("class", "filter-option")
-            .attr("x", (d, i) => i * 60)
-            .attr("y", 0)
             .text(d => d)
             .on("click", function(event, d) {
                 updateChart(d);
-                d3.selectAll(".filter-option").attr("font-weight", "normal");
-                d3.select(this).attr("font-weight", "bold");
+                d3.selectAll(".filter-option").style("font-weight", "normal");
+                d3.select(this).style("font-weight", "bold");
             });
 
         function updateChart(filter) {
@@ -167,6 +167,13 @@
                 .duration(750)
                 .attr("y", d => y(d) - 10)
                 .text(d => `${d}%`);
+        }
+
+        function zoomed(event) {
+            const newTransform = event.transform;
+            g.attr("transform", newTransform);
+            g.select(".x-axis").call(d3.axisBottom(x).scale(newTransform.rescaleX(x)));
+            g.select(".y-axis").call(d3.axisLeft(y).scale(newTransform.rescaleY(y)));
         }
 
         // Inicializar el gráfico
