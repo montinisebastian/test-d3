@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Journey Map</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        svg { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div id="chart"></div>
+    <script>
+        // Aquí irá el código JavaScript para crear y manipular el SVG con D3.js
+        d3.select("#chart").html(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Título -->
+  <text x="400" y="30" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" font-weight="bold">Employee Journey Map</text>
+  
+  <!-- Línea de tiempo -->
+  <line x1="50" y1="100" x2="750" y2="100" stroke="#ccc" stroke-width="4"/>
+  
+  <!-- Puntos de contacto -->
+  <g id="touchpoints">
+    <circle cx="100" cy="100" r="10" fill="#4285f4"/>
+    <circle cx="250" cy="100" r="10" fill="#4285f4"/>
+    <circle cx="400" cy="100" r="10" fill="#4285f4"/>
+    <circle cx="550" cy="100" r="10" fill="#4285f4"/>
+    <circle cx="700" cy="100" r="10" fill="#4285f4"/>
+  </g>
+  
+  <!-- Etiquetas de puntos de contacto -->
+  <g font-family="Arial, sans-serif" font-size="12" text-anchor="middle">
+    <text x="100" y="130">Reclutamiento</text>
+    <text x="250" y="130">Onboarding</text>
+    <text x="400" y="130">Desarrollo</text>
+    <text x="550" y="130">Retención</text>
+    <text x="700" y="130">Salida</text>
+  </g>
+  
+  <!-- Gráfico de satisfacción -->
+  <polyline points="100,250 250,200 400,300 550,180 700,220" fill="none" stroke="#34a853" stroke-width="3"/>
+  
+  <!-- Pains y Gains -->
+  <g font-family="Arial, sans-serif" font-size="14">
+    <rect x="80" y="270" width="40" height="20" fill="#ea4335" filter="url(#shadow)"/>
+    <text x="100" y="285" text-anchor="middle" fill="white">Pain</text>
+    <rect x="230" y="170" width="40" height="20" fill="#34a853" filter="url(#shadow)"/>
+    <text x="250" y="185" text-anchor="middle" fill="white">Gain</text>
+  </g>
+  
+  <!-- Filtros -->
+  <g transform="translate(50, 400)">
+    <rect width="700" height="30" fill="#f1f3f4" rx="5" ry="5"/>
+    <text x="10" y="20" font-family="Arial, sans-serif" font-size="14">Filtros:</text>
+    <text x="70" y="20" font-family="Arial, sans-serif" font-size="14">Área</text>
+    <text x="130" y="20" font-family="Arial, sans-serif" font-size="14">Antigüedad</text>
+    <text x="230" y="20" font-family="Arial, sans-serif" font-size="14">eNPS</text>
+  </g>
+  
+  <!-- Leyenda -->
+  <g transform="translate(50, 450)">
+    <circle cx="10" cy="10" r="5" fill="#4285f4"/>
+    <text x="20" y="15" font-family="Arial, sans-serif" font-size="12">Touchpoint</text>
+    <line x1="100" y1="10" x2="130" y2="10" stroke="#34a853" stroke-width="2"/>
+    <text x="140" y="15" font-family="Arial, sans-serif" font-size="12">Satisfacción</text>
+    <rect x="240" y="5" width="10" height="10" fill="#ea4335"/>
+    <text x="255" y="15" font-family="Arial, sans-serif" font-size="12">Pain</text>
+    <rect x="300" y="5" width="10" height="10" fill="#34a853"/>
+    <text x="315" y="15" font-family="Arial, sans-serif" font-size="12">Gain</text>
+  </g>
+</svg>
+        `);
+
+        // Ejemplo de interactividad básica
+        d3.selectAll("#touchpoints circle")
+            .on("mouseover", function() {
+                d3.select(this).attr("r", 15);
+            })
+            .on("mouseout", function() {
+                d3.select(this).attr("r", 10);
+            });
+    </script>
+</body>
+</html>
