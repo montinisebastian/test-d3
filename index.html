@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Journey Map Mejorado</title>
+    <title>Employee Journey Map Interactivo</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
@@ -11,6 +11,8 @@
         .axis-label { font-size: 12px; }
         .touchpoint-label { font-size: 10px; }
         .legend-item { font-size: 12px; }
+        .filter-option { cursor: pointer; }
+        .filter-option:hover { font-weight: bold; }
     </style>
 </head>
 <body>
@@ -20,20 +22,21 @@
             .append("svg")
             .attr("viewBox", "0 0 800 600");
 
-        // Definir márgenes
         const margin = {top: 50, right: 50, bottom: 100, left: 50};
         const width = 800 - margin.left - margin.right;
         const height = 600 - margin.top - margin.bottom;
 
-        // Crear grupo principal
         const g = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Datos
         const touchpoints = ["Reclutamiento", "Onboarding", "Desarrollo", "Retención", "Salida"];
-        const satisfactionData = [80, 91, 77, 72, 67];
+        
+        const satisfactionData = {
+            "Todos": [80, 91, 77, 72, 67],
+            "IT": [85, 88, 80, 75, 70],
+            "RRHH": [75, 93, 74, 69, 65]
+        };
 
-        // Escalas
         const x = d3.scaleBand()
             .range([0, width])
             .domain(touchpoints)
@@ -69,23 +72,33 @@
             .x((d, i) => x(touchpoints[i]) + x.bandwidth() / 2)
             .y(d => y(d));
 
-        g.append("path")
-            .datum(satisfactionData)
+        const path = g.append("path")
             .attr("fill", "none")
             .attr("stroke", "green")
-            .attr("stroke-width", 2)
-            .attr("d", line);
+            .attr("stroke-width", 2);
 
         // Puntos de Gains y Pains
-        g.selectAll(".point")
-            .data(satisfactionData)
+        const points = g.selectAll(".point")
+            .data(satisfactionData["Todos"])
             .enter()
             .append("rect")
+            .attr("class", "point")
             .attr("x", (d, i) => x(touchpoints[i]) + x.bandwidth() / 2 - 5)
             .attr("y", d => y(d) - 5)
             .attr("width", 10)
             .attr("height", 10)
             .attr("fill", (d, i) => i % 2 === 0 ? "red" : "green");
+
+        // Etiquetas de datos
+        const labels = g.selectAll(".data-label")
+            .data(satisfactionData["Todos"])
+            .enter()
+            .append("text")
+            .attr("class", "data-label")
+            .attr("x", (d, i) => x(touchpoints[i]) + x.bandwidth() / 2)
+            .attr("y", d => y(d) - 10)
+            .attr("text-anchor", "middle")
+            .text(d => `${d}%`);
 
         // Leyenda
         const legend = svg.append("g")
@@ -114,16 +127,50 @@
             .text("Pains")
             .attr("class", "legend-item");
 
-        // Etiquetas de datos
-        g.selectAll(".data-label")
-            .data(satisfactionData)
+        // Filtros
+        const filterOptions = ["Todos", "IT", "RRHH"];
+        svg.append("g")
+            .attr("transform", `translate(${margin.left}, ${height + margin.top + 80})`)
+            .selectAll(".filter-option")
+            .data(filterOptions)
             .enter()
             .append("text")
-            .attr("x", (d, i) => x(touchpoints[i]) + x.bandwidth() / 2)
-            .attr("y", d => y(d) - 10)
-            .attr("text-anchor", "middle")
-            .text(d => `${d}%`)
-            .attr("class", "data-label");
+            .attr("class", "filter-option")
+            .attr("x", (d, i) => i * 60)
+            .attr("y", 0)
+            .text(d => d)
+            .on("click", function(event, d) {
+                updateChart(d);
+                d3.selectAll(".filter-option").attr("font-weight", "normal");
+                d3.select(this).attr("font-weight", "bold");
+            });
+
+        function updateChart(filter) {
+            const data = satisfactionData[filter];
+
+            // Actualizar la línea con transición
+            path.datum(data)
+                .transition()
+                .duration(750)
+                .attr("d", line);
+
+            // Actualizar los puntos con transición
+            points.data(data)
+                .transition()
+                .duration(750)
+                .attr("y", d => y(d) - 5)
+                .attr("fill", (d, i) => i % 2 === 0 ? "red" : "green");
+
+            // Actualizar las etiquetas con transición
+            labels.data(data)
+                .transition()
+                .duration(750)
+                .attr("y", d => y(d) - 10)
+                .text(d => `${d}%`);
+        }
+
+        // Inicializar el gráfico
+        updateChart("Todos");
     </script>
 </body>
 </html>
