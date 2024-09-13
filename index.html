@@ -3,26 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Journey Map Interactivo con Zoom</title>
+    <title>Employee Journey Map Moderno e Interactivo</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; }
-        #chart { width: 100%; height: 500px; } /* Ajusta la altura según tus necesidades */
-        svg { max-width: 100%; height: 100%; }
-        .axis-label { font-size: 12px; }
-        .touchpoint-label { font-size: 10px; }
-        .legend-item { font-size: 12px; }
-        .filter-option { cursor: pointer; }
-        .filter-option:hover { font-weight: bold; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        #chart-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        #chart { 
+            width: 100%; 
+            height: 500px;
+        }
+        svg {
+            max-width: 100%;
+            height: 100%;
+            font-family: inherit;
+        }
+        .axis-label { 
+            font-size: 14px;
+            fill: #555;
+        }
+        .tick text {
+            fill: #666;
+            font-size: 12px;
+        }
+        .tick line {
+            stroke: #ddd;
+        }
+        .domain {
+            stroke: #ddd;
+        }
+        #filters {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .filter-option {
+            background-color: #f0f2f5;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            color: #333;
+        }
+        .filter-option:hover {
+            background-color: #e4e6e9;
+        }
+        .filter-option.active {
+            background-color: #4a90e2;
+            color: white;
+        }
+        .point {
+            transition: all 0.3s ease;
+        }
+        .data-label {
+            font-size: 12px;
+            fill: #555;
+        }
+        .legend-item {
+            font-size: 12px;
+            fill: #666;
+        }
     </style>
 </head>
 <body>
-    <div id="chart"></div>
     <div id="filters"></div>
+    <div id="chart-container">
+        <div id="chart"></div>
+    </div>
     <script>
-        const margin = {top: 50, right: 50, bottom: 100, left: 50};
+        const margin = {top: 40, right: 40, bottom: 80, left: 60};
         const width = 800 - margin.left - margin.right;
-        const height = 600 - margin.top - margin.bottom;
+        const height = 500 - margin.top - margin.bottom;
 
         const svg = d3.select("#chart")
             .append("svg")
@@ -51,15 +116,26 @@
 
         // Eje X
         const xAxis = g.append("g")
+            .attr("class", "x-axis")
             .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x))
-            .selectAll("text")
-            .attr("transform", "rotate(-45)")
-            .style("text-anchor", "end");
+            .call(d3.axisBottom(x).tickSize(0))
+            .call(g => g.select(".domain").remove());
+
+        xAxis.selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-45)");
 
         // Eje Y
         const yAxis = g.append("g")
-            .call(d3.axisLeft(y));
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(y).tickSize(-width))
+            .call(g => g.select(".domain").remove());
+
+        yAxis.selectAll(".tick line")
+            .attr("stroke", "#e0e0e0")
+            .attr("stroke-dasharray", "2,2");
 
         // Etiqueta del eje Y
         g.append("text")
@@ -68,29 +144,30 @@
             .attr("x", 0 - (height / 2))
             .attr("dy", "1em")
             .style("text-anchor", "middle")
+            .attr("class", "axis-label")
             .text("Satisfacción del empleado (%)");
 
         // Línea de satisfacción
         const line = d3.line()
             .x((d, i) => x(touchpoints[i]) + x.bandwidth() / 2)
-            .y(d => y(d));
+            .y(d => y(d))
+            .curve(d3.curveMonotoneX);
 
         const path = g.append("path")
             .attr("fill", "none")
-            .attr("stroke", "green")
-            .attr("stroke-width", 2);
+            .attr("stroke", "#4a90e2")
+            .attr("stroke-width", 3);
 
         // Puntos de Gains y Pains
         const points = g.selectAll(".point")
             .data(satisfactionData["Todos"])
             .enter()
-            .append("rect")
+            .append("circle")
             .attr("class", "point")
-            .attr("x", (d, i) => x(touchpoints[i]) + x.bandwidth() / 2 - 5)
-            .attr("y", d => y(d) - 5)
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("fill", (d, i) => i % 2 === 0 ? "red" : "green");
+            .attr("cx", (d, i) => x(touchpoints[i]) + x.bandwidth() / 2)
+            .attr("cy", d => y(d))
+            .attr("r", 6)
+            .attr("fill", (d, i) => i % 2 === 0 ? "#ff6b6b" : "#4ecdc4");
 
         // Etiquetas de datos
         const labels = g.selectAll(".data-label")
@@ -99,7 +176,7 @@
             .append("text")
             .attr("class", "data-label")
             .attr("x", (d, i) => x(touchpoints[i]) + x.bandwidth() / 2)
-            .attr("y", d => y(d) - 10)
+            .attr("y", d => y(d) - 15)
             .attr("text-anchor", "middle")
             .text(d => `${d}%`);
 
@@ -107,26 +184,27 @@
         const legend = svg.append("g")
             .attr("transform", `translate(${width - 100}, ${height + margin.top + 50})`);
 
-        legend.append("rect")
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("fill", "green");
+        legend.append("circle")
+            .attr("cx", 0)
+            .attr("cy", 0)
+            .attr("r", 6)
+            .attr("fill", "#4ecdc4");
 
         legend.append("text")
-            .attr("x", 15)
-            .attr("y", 10)
+            .attr("x", 10)
+            .attr("y", 4)
             .text("Gains")
             .attr("class", "legend-item");
 
-        legend.append("rect")
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("y", 20)
-            .attr("fill", "red");
+        legend.append("circle")
+            .attr("cx", 0)
+            .attr("cy", 20)
+            .attr("r", 6)
+            .attr("fill", "#ff6b6b");
 
         legend.append("text")
-            .attr("x", 15)
-            .attr("y", 30)
+            .attr("x", 10)
+            .attr("y", 24)
             .text("Pains")
             .attr("class", "legend-item");
 
@@ -141,8 +219,8 @@
             .text(d => d)
             .on("click", function(event, d) {
                 updateChart(d);
-                d3.selectAll(".filter-option").style("font-weight", "normal");
-                d3.select(this).style("font-weight", "bold");
+                d3.selectAll(".filter-option").classed("active", false);
+                d3.select(this).classed("active", true);
             });
 
         function updateChart(filter) {
@@ -158,14 +236,14 @@
             points.data(data)
                 .transition()
                 .duration(750)
-                .attr("y", d => y(d) - 5)
-                .attr("fill", (d, i) => i % 2 === 0 ? "red" : "green");
+                .attr("cy", d => y(d))
+                .attr("fill", (d, i) => i % 2 === 0 ? "#ff6b6b" : "#4ecdc4");
 
             // Actualizar las etiquetas con transición
             labels.data(data)
                 .transition()
                 .duration(750)
-                .attr("y", d => y(d) - 10)
+                .attr("y", d => y(d) - 15)
                 .text(d => `${d}%`);
         }
 
@@ -178,6 +256,7 @@
 
         // Inicializar el gráfico
         updateChart("Todos");
+        d3.select(".filter-option").classed("active", true);
     </script>
 </body>
 </html>
